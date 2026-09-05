@@ -5,6 +5,9 @@
   "config_flow": true,
   "dependencies": [],
   "iot_class": "local_polling",
-  "requirements": ["voluptuous"],
+  "requirements": [
+    "voluptuous",
+    "legacy-yamaha-receiver-control @ https://test-files.pythonhosted.org/packages/f9/49/777cbc3bd2c06908753f4c53f1d22e7856bd5f755e382bcd539fb44e5da3/legacy_yamaha_receiver_control-0.1.3-py3-none-any.whl"
+  ],
   "version": "0.1.0"
 }
