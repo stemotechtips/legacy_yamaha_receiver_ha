@@ -1,0 +1,10 @@
+{
+  "domain": "legacy_yamaha_receiver_ha",
+  "name": "Yamaha Receiver",
+  "codeowners": [],
+  "config_flow": true,
+  "dependencies": [],
+  "iot_class": "local_polling",
+  "requirements": ["voluptuous"],
+  "version": "0.1.0"
+}
