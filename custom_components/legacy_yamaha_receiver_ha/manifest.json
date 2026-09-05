@@ -4,6 +4,7 @@
   "codeowners": [],
   "config_flow": true,
   "dependencies": [],
+  "documentation": "https://github.com/stemotechtips/lagacy_yamaha_receiver_ha",
   "iot_class": "local_polling",
   "requirements": [
     "voluptuous",
