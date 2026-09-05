@@ -6,7 +6,7 @@ Home Assistant custom integration for compatible legacy Yamaha receivers that ex
 
 1. Open **HACS** in Home Assistant.
 2. Select **Integrations**, open the three-dot menu, and choose **Custom repositories**.
-3. Add [https://github.com/stemotechtips/lagacy_yamaha_receiver_ha](https://github.com/stemotechtips/lagacy_yamaha_receiver_ha), select **Integration**, and click **Add**.
+3. Add [https://github.com/stemotechtips/legacy_yamaha_receiver_ha](https://github.com/stemotechtips/legacy_yamaha_receiver_ha), select **Integration**, and click **Add**.
 4. Search for **Yamaha Receiver** and install it.
 5. Restart Home Assistant.
 6. Add the integration from **Settings > Devices & services > Add integration**.

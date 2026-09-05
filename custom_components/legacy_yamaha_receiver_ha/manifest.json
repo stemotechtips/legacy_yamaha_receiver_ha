@@ -1,10 +1,10 @@
 {
   "domain": "legacy_yamaha_receiver_ha",
-  "name": "Yamaha Receiver",
+  "name": "Legacy Yamaha Receiver Control",
   "codeowners": [],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "https://github.com/stemotechtips/lagacy_yamaha_receiver_ha",
+  "documentation": "https://github.com/stemotechtips/legacy_yamaha_receiver_ha",
   "iot_class": "local_polling",
   "requirements": [
     "voluptuous",
