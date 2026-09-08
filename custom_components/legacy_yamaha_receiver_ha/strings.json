@@ -9,11 +9,18 @@
       },
       "confirm": {
         "title": "Confirm Yamaha receiver",
-        "description": "Model: {model_name}\nSystem ID: {system_id}\nFirmware: {firmware_version}\n\nIs this the receiver you want to add?"
+        "description": "Verify the detected receiver details, then accept them to continue.",
+        "data": {
+          "model_name": "Model name",
+          "system_id": "System ID",
+          "firmware_version": "Firmware version",
+          "confirm": "I confirm these details are correct"
+        }
       }
     },
     "error": {
-      "invalid_configuration": "The receiver could not be configured. Check the host and make sure the receiver is reachable."
+      "invalid_configuration": "The receiver could not be configured. Check the host and make sure the receiver is reachable.",
+      "confirmation_required": "Accept the detected receiver details to continue."
     },
     "abort": {
       "already_configured": "Device is already configured"
