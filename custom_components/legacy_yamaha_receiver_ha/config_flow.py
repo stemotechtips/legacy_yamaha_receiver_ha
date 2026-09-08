@@ -12,7 +12,10 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.components.ssdp import async_get_discovery_info_by_st
+from homeassistant.components.ssdp import (
+    async_get_discovery_info_by_st,
+    async_get_discovery_info_by_udn,
+)
 from homeassistant.helpers.selector import SelectSelector, TextSelector
 
 from legacy_yamaha_receiver.receiver_system import get_receiver_details
@@ -105,28 +108,37 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
     async def _async_find_ssdp_devices(self) -> dict[str, dict[str, str]]:
         """Return cached SSDP devices advertised by Yamaha."""
         devices: dict[str, dict[str, str]] = {}
-        for info in await async_get_discovery_info_by_st(self.hass, "urn:yamaha"):
-            manufacturer = str(info.upnp.get("manufacturer", "")).strip()
-            if manufacturer != "YAMAHA CORPORATION":
-                continue
-            search_target = str(info.ssdp_st or "")
-            if "yamaharemotecontrol" not in search_target.lower():
-                continue
-
-            presentation_url = str(info.upnp.get("presentationURL", "")).strip()
-            hostname = urlsplit(presentation_url).hostname
-            if not hostname:
+        root_devices = await async_get_discovery_info_by_st(
+            self.hass, "upnp:rootdevice"
+        )
+        for root_info in root_devices:
+            if not root_info.ssdp_udn:
                 continue
 
-            identifier = info.ssdp_udn or presentation_url
-            devices[identifier] = {
-                "model_name": str(info.upnp.get("modelName", "Unknown model")),
-                "serial_number": str(
-                    info.upnp.get("serialNumber", "Unknown serial number")
-                ),
-                "presentation_url": presentation_url,
-                "host": hostname,
-            }
+            for info in await async_get_discovery_info_by_udn(
+                self.hass, root_info.ssdp_udn
+            ):
+                manufacturer = str(info.upnp.get("manufacturer", "")).strip()
+                if manufacturer != "YAMAHA CORPORATION":
+                    continue
+
+                search_target = str(info.ssdp_st or "")
+                if "yamaharemotecontrol" not in search_target.lower():
+                    continue
+
+                presentation_url = str(info.upnp.get("presentationURL", "")).strip()
+                hostname = urlsplit(presentation_url).hostname
+                if not hostname:
+                    continue
+
+                devices[info.ssdp_udn] = {
+                    "model_name": str(info.upnp.get("modelName", "Unknown model")),
+                    "serial_number": str(
+                        info.upnp.get("serialNumber", "Unknown serial number")
+                    ),
+                    "presentation_url": presentation_url,
+                    "host": hostname,
+                }
         return devices
 
     async def async_step_ssdp(
