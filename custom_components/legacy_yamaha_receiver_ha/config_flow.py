@@ -21,12 +21,7 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-STEP_USER_DATA_SCHEMA = vol.Schema(
-    {
-        vol.Optional(CONF_HOST, default=""): str,
-        vol.Required("auto_detect", default=False): bool,
-    }
-)
+STEP_MANUAL_DATA_SCHEMA = vol.Schema({vol.Required(CONF_HOST): str})
 
 
 async def validate_input(
@@ -61,17 +56,20 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Handle the initial step."""
+        """Show the setup method menu."""
+        return self.async_show_menu(
+            step_id="user",
+            menu_options=["manual", "auto_detect"],
+        )
+
+    async def async_step_manual(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Handle manual host entry."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            if user_input["auto_detect"]:
-                self._ssdp_devices = await self._async_find_ssdp_devices()
-                if not self._ssdp_devices:
-                    errors["base"] = "no_receivers_found"
-                else:
-                    return await self.async_step_ssdp()
-            elif not user_input[CONF_HOST].strip():
+            if not user_input[CONF_HOST].strip():
                 errors["base"] = "host_required"
             else:
                 try:
@@ -86,10 +84,23 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
                     return await self.async_step_confirm()
 
         return self.async_show_form(
-            step_id="user",
-            data_schema=STEP_USER_DATA_SCHEMA,
+            step_id="manual",
+            data_schema=STEP_MANUAL_DATA_SCHEMA,
             errors=errors,
         )
+
+    async def async_step_auto_detect(
+        self, user_input: None = None
+    ) -> ConfigFlowResult:
+        """Search for Yamaha receivers advertised over SSDP."""
+        self._ssdp_devices = await self._async_find_ssdp_devices()
+        if not self._ssdp_devices:
+            return self.async_show_form(
+                step_id="manual",
+                data_schema=STEP_MANUAL_DATA_SCHEMA,
+                errors={"base": "no_receivers_found"},
+            )
+        return await self.async_step_ssdp()
 
     async def _async_find_ssdp_devices(self) -> dict[str, dict[str, str]]:
         """Return cached SSDP devices advertised by Yamaha."""

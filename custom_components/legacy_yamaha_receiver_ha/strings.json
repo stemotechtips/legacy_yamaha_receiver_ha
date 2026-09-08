@@ -3,9 +3,15 @@
     "step": {
       "user": {
         "title": "Connect to Yamaha receiver",
+        "menu_options": {
+          "manual": "Enter IP address",
+          "auto_detect": "Find receivers"
+        }
+      },
+      "manual": {
+        "title": "Enter receiver IP address",
         "data": {
-          "host": "Host",
-          "auto_detect": "Attempt auto-detect"
+          "host": "Host"
         }
       },
       "ssdp": {
