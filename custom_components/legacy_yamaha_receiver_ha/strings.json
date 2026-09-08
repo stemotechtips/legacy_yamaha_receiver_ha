@@ -4,7 +4,15 @@
       "user": {
         "title": "Connect to Yamaha receiver",
         "data": {
-          "host": "Host"
+          "host": "Host",
+          "auto_detect": "Attempt auto-detect"
+        }
+      },
+      "ssdp": {
+        "title": "Yamaha receivers found",
+        "description": "Select a Yamaha receiver to configure.",
+        "data": {
+          "device": "Receiver"
         }
       },
       "confirm": {
@@ -13,12 +21,16 @@
         "data": {
           "model_name": "Model name",
           "system_id": "System ID",
-          "firmware_version": "Firmware version"
+          "firmware_version": "Firmware version",
+          "serial_number": "Serial number",
+          "presentation_url": "Presentation URL"
         }
       }
     },
     "error": {
-      "invalid_configuration": "The receiver could not be configured. Check the host and make sure the receiver is reachable."
+      "invalid_configuration": "The receiver could not be configured. Check the host and make sure the receiver is reachable.",
+      "host_required": "Enter a receiver host or select auto-detect.",
+      "no_receivers_found": "No Yamaha receivers were found over SSDP."
     },
     "abort": {
       "already_configured": "Device is already configured"

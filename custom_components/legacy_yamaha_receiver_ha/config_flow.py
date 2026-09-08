@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any
+from urllib.parse import urlsplit
 
 import voluptuous as vol
 
@@ -11,7 +12,8 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.selector import TextSelector
+from homeassistant.components.ssdp import async_get_discovery_info_by_st
+from homeassistant.helpers.selector import SelectSelector, TextSelector
 
 from legacy_yamaha_receiver.receiver_system import get_receiver_details
 
@@ -19,7 +21,12 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-STEP_USER_DATA_SCHEMA = vol.Schema({vol.Required(CONF_HOST): str})
+STEP_USER_DATA_SCHEMA = vol.Schema(
+    {
+        vol.Optional(CONF_HOST, default=""): str,
+        vol.Required("auto_detect", default=False): bool,
+    }
+)
 
 
 async def validate_input(
@@ -49,6 +56,7 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
     _receiver_data: dict[str, Any]
+    _ssdp_devices: dict[str, dict[str, str]]
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -57,21 +65,99 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            try:
-                info = await validate_input(self.hass, user_input)
-            except InvalidConfiguration:
-                errors["base"] = "invalid_configuration"
-            except Exception:
-                _LOGGER.exception("Unexpected exception")
-                errors["base"] = "unknown"
+            if user_input["auto_detect"]:
+                self._ssdp_devices = await self._async_find_ssdp_devices()
+                if not self._ssdp_devices:
+                    errors["base"] = "no_receivers_found"
+                else:
+                    return await self.async_step_ssdp()
+            elif not user_input[CONF_HOST].strip():
+                errors["base"] = "host_required"
             else:
-                self._receiver_data = {**user_input, **info}
-                return await self.async_step_confirm()
+                try:
+                    info = await validate_input(self.hass, user_input)
+                except InvalidConfiguration:
+                    errors["base"] = "invalid_configuration"
+                except Exception:
+                    _LOGGER.exception("Unexpected exception")
+                    errors["base"] = "unknown"
+                else:
+                    self._receiver_data = {**user_input, **info}
+                    return await self.async_step_confirm()
 
         return self.async_show_form(
             step_id="user",
             data_schema=STEP_USER_DATA_SCHEMA,
             errors=errors,
+        )
+
+    async def _async_find_ssdp_devices(self) -> dict[str, dict[str, str]]:
+        """Return cached SSDP devices advertised by Yamaha."""
+        devices: dict[str, dict[str, str]] = {}
+        for info in await async_get_discovery_info_by_st(self.hass, "upnp:rootdevice"):
+            manufacturer = str(info.upnp.get("manufacturer", "")).strip()
+            if manufacturer != "YAMAHA CORPORATION":
+                continue
+
+            presentation_url = str(info.upnp.get("presentationURL", "")).strip()
+            hostname = urlsplit(presentation_url).hostname
+            if not hostname:
+                continue
+
+            identifier = info.ssdp_udn or presentation_url
+            devices[identifier] = {
+                "model_name": str(info.upnp.get("modelName", "Unknown model")),
+                "serial_number": str(
+                    info.upnp.get("serialNumber", "Unknown serial number")
+                ),
+                "presentation_url": presentation_url,
+                "host": hostname,
+            }
+        return devices
+
+    async def async_step_ssdp(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Let the user select a Yamaha receiver found over SSDP."""
+        if user_input is not None:
+            device = self._ssdp_devices[user_input["device"]]
+            try:
+                info = await validate_input(
+                    self.hass, {CONF_HOST: device["host"]}
+                )
+            except InvalidConfiguration:
+                return self.async_show_form(
+                    step_id="ssdp",
+                    data_schema=self._ssdp_schema(),
+                    errors={"base": "invalid_configuration"},
+                )
+
+            self._receiver_data = {
+                **device,
+                **info,
+                "ssdp": True,
+            }
+            return await self.async_step_confirm()
+
+        return self.async_show_form(
+            step_id="ssdp",
+            data_schema=self._ssdp_schema(),
+        )
+
+    def _ssdp_schema(self) -> vol.Schema:
+        """Return the selector for discovered Yamaha receivers."""
+        options = [
+            {
+                "value": identifier,
+                "label": (
+                    f"{device['model_name']} | {device['serial_number']} | "
+                    f"{device['presentation_url']}"
+                ),
+            }
+            for identifier, device in self._ssdp_devices.items()
+        ]
+        return vol.Schema(
+            {vol.Required("device"): SelectSelector({"options": options})}
         )
 
     async def async_step_confirm(
@@ -86,10 +172,23 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="confirm",
-            data_schema=vol.Schema(
+            data_schema=self._confirmation_schema(),
+        )
+
+    def _confirmation_schema(self) -> vol.Schema:
+        """Return read-only fields for the detected receiver."""
+        if self._receiver_data.get("ssdp"):
+            return vol.Schema(
                 {
                     vol.Required(
                         "model_name", default=self._receiver_data["model_name"]
+                    ): TextSelector({"read_only": True}),
+                    vol.Required(
+                        "serial_number", default=self._receiver_data["serial_number"]
+                    ): TextSelector({"read_only": True}),
+                    vol.Required(
+                        "presentation_url",
+                        default=self._receiver_data["presentation_url"],
                     ): TextSelector({"read_only": True}),
                     vol.Required(
                         "system_id", default=self._receiver_data["system_id"]
@@ -99,7 +198,20 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
                         default=self._receiver_data["firmware_version"],
                     ): TextSelector({"read_only": True}),
                 }
-            ),
+            )
+        return vol.Schema(
+            {
+                vol.Required(
+                    "model_name", default=self._receiver_data["model_name"]
+                ): TextSelector({"read_only": True}),
+                vol.Required(
+                    "system_id", default=self._receiver_data["system_id"]
+                ): TextSelector({"read_only": True}),
+                vol.Required(
+                    "firmware_version",
+                    default=self._receiver_data["firmware_version"],
+                ): TextSelector({"read_only": True}),
+            }
         )
 
 

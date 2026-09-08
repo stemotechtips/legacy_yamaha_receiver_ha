@@ -4,7 +4,15 @@
       "user": {
         "title": "Connect to Yamaha receiver",
         "data": {
-          "host": "Host"
+          "host": "Host",
+          "auto_detect": "Attempt auto-detect"
+        }
+      },
+      "ssdp": {
+        "title": "Yamaha receivers found",
+        "description": "Select a Yamaha receiver to configure.",
+        "data": {
+          "device": "Receiver"
         }
       },
       "confirm": {
@@ -13,7 +21,9 @@
         "data": {
           "model_name": "Model name",
           "system_id": "System ID",
-          "firmware_version": "Firmware version"
+          "firmware_version": "Firmware version",
+          "serial_number": "Serial number",
+          "presentation_url": "Presentation URL"
         }
       }
     },

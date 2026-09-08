@@ -3,12 +3,17 @@
   "name": "Legacy Yamaha Receiver Control",
   "codeowners": [],
   "config_flow": true,
-  "dependencies": [],
+  "dependencies": ["ssdp"],
   "documentation": "https://github.com/stemotechtips/legacy_yamaha_receiver_ha",
   "iot_class": "local_polling",
   "requirements": [
     "voluptuous",
     "legacy-yamaha-receiver-control @ https://test-files.pythonhosted.org/packages/99/ee/bd3fe98fb07c3e493c8374e2fc512423f4cc32c7b52b52e9b0b837e1e103/legacy_yamaha_receiver_control-0.1.5-py3-none-any.whl"
   ],
-  "version": "0.1.6"
+  "ssdp": [
+    {
+      "st": "upnp:rootdevice"
+    }
+  ],
+  "version": "0.2.1"
 }
