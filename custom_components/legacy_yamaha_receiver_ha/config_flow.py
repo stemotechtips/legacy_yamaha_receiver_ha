@@ -109,6 +109,9 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
             manufacturer = str(info.upnp.get("manufacturer", "")).strip()
             if manufacturer != "YAMAHA CORPORATION":
                 continue
+            search_target = str(info.ssdp_st or "")
+            if "yamaharemotecontrol" not in search_target.lower():
+                continue
 
             presentation_url = str(info.upnp.get("presentationURL", "")).strip()
             hostname = urlsplit(presentation_url).hostname
