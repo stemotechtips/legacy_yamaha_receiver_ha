@@ -10,7 +10,9 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+from legacy_yamaha_receiver.receiver_system import get_receiver_details
 
 from .const import DOMAIN
 
@@ -19,17 +21,33 @@ _LOGGER = logging.getLogger(__name__)
 STEP_USER_DATA_SCHEMA = vol.Schema({vol.Required(CONF_HOST): str})
 
 
-async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
-    """Validate the user input for a Yamaha receiver host."""
-    # This is intentionally minimal. It accepts a host and does not perform a
-    # real receiver check, so it can be used as a simple custom integration stub.
-    return {"title": f"Yamaha Receiver {data[CONF_HOST]}"}
+async def validate_input(
+    hass: HomeAssistant, data: dict[str, Any]
+) -> dict[str, Any]:
+    """Retrieve and validate the receiver details for a host."""
+    receiver_url = f"http://{data[CONF_HOST]}/YamahaRemoteControl/ctrl"
+    session = async_get_clientsession(hass)
+
+    try:
+        details = await get_receiver_details(session, receiver_url)
+        assert len(details) == 3 and all(value is not None for value in details)
+    except Exception as err:
+        raise InvalidConfiguration from err
+
+    model_name, system_id, firmware_version = details
+    return {
+        "title": f"Yamaha Receiver {data[CONF_HOST]}",
+        "model_name": model_name,
+        "system_id": system_id,
+        "firmware_version": firmware_version,
+    }
 
 
 class ConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for the custom Yamaha receiver test."""
 
     VERSION = 1
+    _receiver_data: dict[str, Any]
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -40,13 +58,14 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             try:
                 info = await validate_input(self.hass, user_input)
-            except CannotConnect:
-                errors["base"] = "cannot_connect"
+            except InvalidConfiguration:
+                errors["base"] = "invalid_configuration"
             except Exception:
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
             else:
-                return self.async_create_entry(title=info["title"], data=user_input)
+                self._receiver_data = {**user_input, **info}
+                return await self.async_step_confirm()
 
         return self.async_show_form(
             step_id="user",
@@ -54,6 +73,25 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
+    async def async_step_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask the user to confirm the detected receiver details."""
+        if user_input is not None:
+            return self.async_create_entry(
+                title=self._receiver_data["title"],
+                data={CONF_HOST: self._receiver_data[CONF_HOST]},
+            )
 
-class CannotConnect(HomeAssistantError):
-    """Error to indicate we cannot connect."""
+        return self.async_show_form(
+            step_id="confirm",
+            description_placeholders={
+                "model_name": self._receiver_data["model_name"],
+                "system_id": self._receiver_data["system_id"],
+                "firmware_version": self._receiver_data["firmware_version"],
+            },
+        )
+
+
+class InvalidConfiguration(Exception):
+    """Error to indicate the receiver could not be configured."""

@@ -17,7 +17,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up the Yamaha receiver metadata sensor."""
     coordinator: YamahaUpdateCoordinator = config_entry.runtime_data
-    async_add_entities([YamahaReceiverSensor(coordinator)])
+    async_add_entities([YamahaReceiverSensor(coordinator, coordinator.receiver)])
 
 
 class YamahaReceiverSensor(SensorEntity):
@@ -27,30 +27,30 @@ class YamahaReceiverSensor(SensorEntity):
     _attr_name = "Receiver"
     _attr_should_poll = False
 
-    def __init__(self, coordinator: YamahaUpdateCoordinator) -> None:
+    def __init__(self, coordinator: YamahaUpdateCoordinator, receiver) -> None:
         """Initialize the receiver sensor."""
         self.coordinator = coordinator
+        self.receiver = receiver
         self._attr_unique_id = (
-            f"{coordinator.receiver.system_ID}_receiver_metadata"
-            if coordinator.receiver.system_ID
+            f"{receiver.system_ID}_receiver_metadata"
+            if receiver.system_ID
             else "yamaha_receiver_metadata"
         )
 
     @property
     def native_value(self) -> str:
         """Return the receiver model name as the sensor value."""
-        return self.coordinator.receiver.model_name or "Unknown model"
+        return self.receiver.model_name or "Unknown model"
 
     @property
     def extra_state_attributes(self) -> dict[str, str | bool]:
         """Return the receiver characteristics as attributes."""
-        receiver = self.coordinator.receiver
         return {
-            "model_name": receiver.model_name,
-            "system_id": receiver.system_ID,
-            "firmware_version": receiver.firmware_version,
-            "ip_address": receiver.ip_address,
-            "valid_setup": receiver.valid_setup,
+            "model_name": self.receiver.model_name,
+            "system_id": self.receiver.system_ID,
+            "firmware_version": self.receiver.firmware_version,
+            "ip_address": self.receiver.ip_address,
+            "valid_setup": self.receiver.valid_setup,
             "zone_count": 3,
-            "available_inputs": receiver.available_inputs,
+            "available_inputs": self.receiver.available_inputs,
         }

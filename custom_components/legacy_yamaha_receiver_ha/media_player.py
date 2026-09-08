@@ -29,9 +29,11 @@ async def async_setup_entry(
 ) -> None:
     """Set up one HA media player per Yamaha zone."""
     coordinator: YamahaUpdateCoordinator = config_entry.runtime_data
+    receiver = coordinator.receiver
     async_add_entities(
-        [YamahaZoneEntity(coordinator, zone) for zone in coordinator.receiver.zones]
+        [YamahaZoneEntity(coordinator, receiver, zone) for zone in receiver.zones]
     )
+
 
 class YamahaZoneEntity(CoordinatorEntity[YamahaUpdateCoordinator], MediaPlayerEntity):
     """Represent a Yamaha receiver zone as a Home Assistant media player."""
@@ -47,9 +49,10 @@ class YamahaZoneEntity(CoordinatorEntity[YamahaUpdateCoordinator], MediaPlayerEn
         #| MediaPlayerEntityFeature.SELECT_SOUND_MODE
     )
 
-    def __init__(self, coordinator: YamahaUpdateCoordinator, zone: Zone) -> None:
+    def __init__(self, coordinator: YamahaUpdateCoordinator, receiver, zone: Zone) -> None:
         """Initialize the zone entity."""
         super().__init__(coordinator)
+        self._receiver = receiver
         self._zone = zone
         self._attr_name = zone.zone_name.replace("_", " ")
         self._attr_unique_id = zone.zone_id
@@ -63,13 +66,13 @@ class YamahaZoneEntity(CoordinatorEntity[YamahaUpdateCoordinator], MediaPlayerEn
 
     @property
     def receiver_ip(self) -> str:
-        """Return the Yamaha receiver IP address from the coordinator-owned receiver."""
-        return self.coordinator.receiver.ip_address
+        """Return the Yamaha receiver IP address."""
+        return self._receiver.ip_address
 
     @property
     def receiver(self):
-        """Return the coordinator-owned Yamaha receiver."""
-        return self.coordinator.receiver
+        """Return the Yamaha receiver passed to this entity."""
+        return self._receiver
 
     @property
     def state(self) -> MediaPlayerState:
