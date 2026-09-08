@@ -11,6 +11,7 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.selector import TextSelector
 
 from legacy_yamaha_receiver.receiver_system import get_receiver_details
 
@@ -78,13 +79,6 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Ask the user to confirm the detected receiver details."""
         if user_input is not None:
-            if not user_input["confirm"]:
-                return self.async_show_form(
-                    step_id="confirm",
-                    data_schema=self._confirmation_schema(),
-                    errors={"base": "confirmation_required"},
-                )
-
             return self.async_create_entry(
                 title=self._receiver_data["title"],
                 data={CONF_HOST: self._receiver_data[CONF_HOST]},
@@ -92,25 +86,20 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="confirm",
-            data_schema=self._confirmation_schema(),
-        )
-
-    def _confirmation_schema(self) -> vol.Schema:
-        """Return the form schema containing the detected receiver details."""
-        return vol.Schema(
-            {
-                vol.Required(
-                    "model_name", default=self._receiver_data["model_name"]
-                ): str,
-                vol.Required(
-                    "system_id", default=self._receiver_data["system_id"]
-                ): str,
-                vol.Required(
-                    "firmware_version",
-                    default=self._receiver_data["firmware_version"],
-                ): str,
-                vol.Required("confirm", default=False): bool,
-            }
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        "model_name", default=self._receiver_data["model_name"]
+                    ): TextSelector({"read_only": True}),
+                    vol.Required(
+                        "system_id", default=self._receiver_data["system_id"]
+                    ): TextSelector({"read_only": True}),
+                    vol.Required(
+                        "firmware_version",
+                        default=self._receiver_data["firmware_version"],
+                    ): TextSelector({"read_only": True}),
+                }
+            ),
         )
 
 
