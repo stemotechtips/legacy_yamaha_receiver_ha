@@ -19,7 +19,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     receiver_url = f"http://{entry.data['host']}/YamahaRemoteControl/ctrl"
     session = async_get_clientsession(hass)
 
-    receiver = await Receiver.async_create(session, receiver_url)
+    receiver = await Receiver.initialise_receiver(session, receiver_url)
     coordinator = YamahaUpdateCoordinator(hass, entry, receiver)
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
