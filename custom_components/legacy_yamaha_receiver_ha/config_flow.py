@@ -85,6 +85,7 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="confirm",
+            data_schema=vol.Schema({}),
             description_placeholders={
                 "model_name": self._receiver_data["model_name"],
                 "system_id": self._receiver_data["system_id"],
