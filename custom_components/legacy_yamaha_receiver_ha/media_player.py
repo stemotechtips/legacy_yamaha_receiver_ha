@@ -56,6 +56,7 @@ class YamahaZoneEntity(CoordinatorEntity[YamahaUpdateCoordinator], MediaPlayerEn
         self._zone = zone
         self._attr_name = zone.zone_name.replace("_", " ")
         self._attr_unique_id = zone.zone_id
+        self._attr_source_list = self._get_source_list()
         if zone.zone_name == "Main_Zone":
             self._attr_supported_features = self._attr_supported_features | MediaPlayerEntityFeature.SELECT_SOUND_MODE
 
@@ -133,10 +134,14 @@ class YamahaZoneEntity(CoordinatorEntity[YamahaUpdateCoordinator], MediaPlayerEn
     @property
     def source_list(self) -> list[str] | None:
         """Return list of available input sources."""
-        available_inputs = getattr(self.zone, "available_inputs", None)
-        if available_inputs is None:
+        return self._attr_source_list
+
+    def _get_source_list(self) -> list[str] | None:
+        """Return source names from the receiver input list."""
+        available_inputs = getattr(self._receiver, "available_inputs", None)
+        if not available_inputs:
             return None
-        return [input.value for input in available_inputs]
+        return [getattr(input_type, "value", str(input_type)) for input_type in available_inputs]
 
     @property
     def sound_mode_list(self) -> list[str] | None:
@@ -149,6 +154,7 @@ class YamahaZoneEntity(CoordinatorEntity[YamahaUpdateCoordinator], MediaPlayerEn
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
+        self._attr_source_list = self._get_source_list()
         self.async_write_ha_state()
 
     async def async_turn_on(self, **kwargs):
