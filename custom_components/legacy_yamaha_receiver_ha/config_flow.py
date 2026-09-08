@@ -105,7 +105,7 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
     async def _async_find_ssdp_devices(self) -> dict[str, dict[str, str]]:
         """Return cached SSDP devices advertised by Yamaha."""
         devices: dict[str, dict[str, str]] = {}
-        for info in await async_get_discovery_info_by_st(self.hass, "upnp:rootdevice"):
+        for info in await async_get_discovery_info_by_st(self.hass, "urn:yamaha"):
             manufacturer = str(info.upnp.get("manufacturer", "")).strip()
             if manufacturer != "YAMAHA CORPORATION":
                 continue
