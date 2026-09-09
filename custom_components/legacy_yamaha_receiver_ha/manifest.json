@@ -8,12 +8,12 @@
   "iot_class": "local_polling",
   "requirements": [
     "voluptuous",
-    "legacy-yamaha-receiver-control @ https://test-files.pythonhosted.org/packages/8a/70/afb51e2ea525595dab285e8f161038e1209e33b4c1df6834e19b7dc88f77/legacy_yamaha_receiver_control-0.2.0.tar.gz"
+    "legacy-yamaha-receiver-control @ https://test-files.pythonhosted.org/packages/4e/7a/e4a72567c90563f15c9fd18a7149e38c846e00b028fb7d3b1fdf70643684/legacy_yamaha_receiver_control-0.2.1.tar.gz"
   ],
   "ssdp": [
     {
       "st": "upnp:rootdevice"
     }
   ],
-  "version": "0.3.1"
+  "version": "0.3.2"
 }
