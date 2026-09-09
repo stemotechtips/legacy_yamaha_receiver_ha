@@ -2,6 +2,17 @@
 
 Home Assistant custom integration for compatible legacy Yamaha receivers that expose the Yamaha Web Control interface.
 
+## Overview
+
+This library exposes a separate media player entity for each zone operated by the receiver.  Each entity can:
+
+1. Be turned on and off
+2. Be muted, and have its volume adjusted
+3. Select a source from the available list of sources (which should be populated according to the sources actually available on the receiver)
+4. (In the case of the main zone) select an audio program
+
+It also exposes a sensor entity which provides some general information about the amplifier.  
+
 ## Installation with HACS
 
 1. Open **HACS** in Home Assistant.
